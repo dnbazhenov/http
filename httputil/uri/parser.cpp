@@ -14,244 +14,253 @@ namespace httputil
 				return 0;
 
 			size_t processed = 0;
-			size_t retry = 0;
-			char ch = 0;
 
-			while (1)
+			while (processed < size)
 			{
-				if (retry == 0)
+				auto ch = data[processed++];
+
+				printf("%ld: '%c'(%d)\n", processed - 1, ch, ch);
+
+				if (!pct_check(ch))
+					return set_error(processed - 1);
+
+				if (_state == S_start)
 				{
-					if (processed == size)
-						break;
+					if (ch == '/')
+					{
+						_path_sz = 1;
+						set_type(type_t::origin);
+						set_state(S_path);
+						continue;
+					}
 
-					ch = data[processed++];
+					if (*data == '*')
+					{
+						_host_sz = 1;
+						set_type(uri_t::asteriks);
+						set_state(S_asterisk);
+						continue;
+					}
 
-					printf("%ld: '%c'(%d)\n", processed, ch, ch);
+					//
+					// authority-form and absolute-form may not be distinguishable at start.
+					// the absolute-form started with the scheme part is only recognized
+					// if the URI starts with ALPHA,
+					// contains only characters belonging to the scheme set, and ends
+					// with "://".
+					// if either of the conditions is not met, we treat the URI as a
+					// authority form.
+					//
 
-					if (!pct_check(ch))
-						return set_error(processed);
+					if (http::is_alpha(ch))
+					{
+						set_state(S_scheme);
+						_host_sz = 1;
+						continue;
+					}
+
+					// reinterpret as user or host character
+					set_type(uri_t::authority);
+					set_state(S_user_or_host);
 				}
 
-				retry = 0;
-
-				if (ch == ' ' || ch == '\0')
+				if (_state == S_scheme)
 				{
-					return _pct ? set_error(processed) : set_done(processed);
+					if (http::is_schar(ch))
+					{
+						++_host_sz;
+						continue;
+					}
+
+					if (ch == ':')
+					{
+						set_state(S_scheme_colon);
+						continue;
+					}
+
+					// reinterpret as port character
+					set_state(S_user_or_host);
 				}
 
-				switch (_state)
+				if (_state == S_scheme_colon)
 				{
-					case S_start:
-						// check for origin-form
-						if (ch == '/')
-						{
-							set_state(S_path);
-							set_type(type_t::origin);
-							_path_sz = 1;
-							continue;
-						}
-
-						// check for asteriks-form
-						if (*data == '*')
-						{
-							set_state(S_done);
-							set_type(uri_t::asteriks);
-							_host_sz = 1;
-							continue;
-						}
-
-						//
-						// authority-form and absolute-form may not be distinguishable at start.
-						// the absolute-form started with the scheme part is only recognized
-						// if the URI starts with ALPHA,
-						// contains only characters belonging to the scheme set, and ends
-						// with "://".
-						// if either of the conditions is not met, we treat the URI as a
-						// authority form.
-						//
-
-						if (http::is_alpha(ch))
-						{
-							set_state(S_scheme);
-							_host_sz = 1;
-							continue;
-						}
-
-						set_state(S_user_or_host);
-						set_type(uri_t::authority);
-						retry = 1;
+					if (ch == '/')
+					{
+						set_state(S_scheme_colon_slash);
 						continue;
+					}
 
-					case S_scheme:
-						if (http::is_schar(ch))
-						{
-							++_host_sz;
-							continue;
-						}
+					// reinterpret as port character
+					set_state(S_user_or_port);
+				}
 
-						if (ch == ':')
-						{
-							set_state(S_scheme_colon);
-							continue;
-						}
-
+				if (_state == S_scheme_colon_slash)
+				{
+					if (ch == '/')
+					{
 						set_state(S_user_or_host);
-						retry = 1;
+						//						set_type(uri_t::absolute);
+						std::swap(_host_sz, _scheme_sz);
 						continue;
+					}
 
-					case S_scheme_colon:
-						if (ch == '/')
-						{
-							set_state(S_scheme_colon_slash);
-							set_type(uri_t::absolute);
-							continue;
-						}
+					_port_sz = 1;  // colon
+					_path_sz = 1;  // slash
 
+					// this is an authority + path [query] form
+					set_type(uri_t::authority_plus);
+
+					// reinterpret as path character
+					set_state(S_path);
+				}
+
+				if (_state == S_asterisk && ch != ' ' && ch != '\0')
+				{
+					set_type(uri_t::authority);
+
+					// reinterpret as user or host character
+					set_state(S_user_or_host);
+				}
+
+				if (_state == S_user_or_host)
+				{
+					if (http::is_uchar(ch))
+					{
+						++_host_sz;
+						continue;
+					}
+
+					if (ch == ':')
+					{
+						_port_sz = 1;
 						set_state(S_user_or_port);
-						retry = 1;
 						continue;
+					}
 
-					case S_scheme_colon_slash:
-						if (ch == '/')
-						{
-							set_state(S_user_or_host);
-							std::swap(_host_sz, _scheme_sz);
-							continue;
-						}
+					if (ch == '/')
+					{
+						_path_sz = 1;
+						set_state(S_path);
+						continue;
+					}
 
-						return set_error(processed);
-
-					case S_user_or_host:
-						if (http::is_uchar(ch))
-						{
-							++_host_sz;
-							continue;
-						}
-
-						// next is either a port number or second user info word
-						if (ch == ':')
-						{
-							set_state(S_user_or_port);
-							continue;
-						}
-
-						// reinterpret as host
-						if (ch == '/')
-						{
-							set_state(S_host);
-							retry = 1;
-							continue;
-						}
-
-						// reinterpret as user info
-						set_state(S_user);
+					if (ch == '@')
+					{
 						std::swap(_user_sz, _host_sz);
-						retry = 1;
-						continue;
-
-					case S_user_or_port:
-						if (update_port(ch))
-						{
-							++_port_sz;
-							continue;
-						}
-
-						// reinterpret as host
-						if (ch == '/')
-						{
-							set_state(S_host);
-							retry = 1;
-							continue;
-						}
-
-						// reinterpret as user info
 						set_state(S_host);
-						std::swap(_user_sz, _host_sz);
-						_user_sz += _port_sz + 1;
-						_port = _port_sz = 0;
-						retry = 1;
 						continue;
-
-					case S_user:
-						if (http::is_uchar(ch))
-						{
-							++_user_sz;
-							continue;
-						}
-
-						if (ch == '@')
-						{
-							set_state(S_host);
-							continue;
-						}
-
-						return set_error(processed);
-
-					case S_host:
-						if (http::is_hchar(ch))
-						{
-							++_host_sz;
-							continue;
-						}
-
-						if (ch == ':')
-						{
-							// next is port number
-							set_state(S_port);
-							continue;
-						}
-
-						if (ch == '/' && _type == type_t::absolute)
-						{
-							set_state(S_path);
-							_path_sz = 1;
-							continue;
-						}
-
-						return set_error(processed);
-
-					case S_port:
-						if (update_port(ch))
-						{
-							++_port_sz;
-							continue;
-						}
-
-						if (ch == '/' && _type == type_t::absolute)
-						{
-							set_state(S_path);
-							_path_sz = 1;
-							continue;
-						}
-
-						return set_error(processed);
-
-					case S_path:
-						if (http::is_pchar(ch))
-						{
-							_path_sz++;
-							continue;
-						}
-
-						if (ch == '&')
-						{
-							set_state(S_query);
-							continue;
-						}
-
-						break;
-
-					case S_query:
-						if (http::is_qchar(ch))
-						{
-							_query_sz++;
-							continue;
-						}
-
-						break;
+					}
 				}
 
-				return set_error(processed);
+				if (_state == S_user_or_port)
+				{
+					if (update_port(ch))
+					{
+						++_port_sz;
+						continue;
+					}
+
+					if (ch == '/')
+					{
+						_path_sz = 1;
+						set_state(S_path);
+						continue;
+					}
+
+					if (ch != ' ' && ch != '\0')
+					{
+						// reinterpret as user info
+						std::swap(_user_sz, _host_sz);
+						_user_sz += _port_sz;
+						_port = _port_sz = 0;
+						set_state(S_user);
+					}
+				}
+
+				if (_state == S_user)
+				{
+					if (http::is_uchar(ch))
+					{
+						++_user_sz;
+						continue;
+					}
+
+					if (ch == '@')
+					{
+						set_state(S_host);
+						continue;
+					}
+
+					return set_error(processed - 1);
+				}
+
+				if (_state == S_host)
+				{
+					if (http::is_hchar(ch))
+					{
+						++_host_sz;
+						continue;
+					}
+
+					if (ch == ':')
+					{
+						_port_sz = 1;
+						set_state(S_port);
+						continue;
+					}
+
+					if (ch == '/')
+					{
+						_path_sz = 1;
+						set_state(S_path);
+						continue;
+					}
+				}
+
+				if (_state == S_port)
+				{
+					if (update_port(ch))
+					{
+						++_port_sz;
+						continue;
+					}
+
+					if (ch == '/')
+					{
+						_path_sz = 1;
+						set_state(S_path);
+						continue;
+					}
+				}
+
+				if (_state == S_path)
+				{
+					if (http::is_pchar(ch))
+					{
+						_path_sz++;
+						continue;
+					}
+
+					if (ch == '&')
+					{
+						set_state(S_query);
+						continue;
+					}
+				}
+
+				if (_state == S_query)
+				{
+					if (http::is_qchar(ch))
+					{
+						_query_sz++;
+						continue;
+					}
+				}
+
+				if ((ch == ' ' || ch == '\0')&& _pct == pct_t::none)
+					return set_done(processed);
+
+				return set_error(processed - 1);
 			}
 
 			return processed;
@@ -261,9 +270,9 @@ namespace httputil
 		{
 			_user_of = _scheme_sz ? _scheme_sz + 3 : 0;
 			_host_of = _user_of + _user_sz ? _user_sz + 1 : 0;
-			_port_of = _host_of + _host_sz + _port_sz ? 1 : 0;
+			_port_of = _host_of + _host_sz;
 			_path_of = _port_of + _port_sz;
-			_query_of = _path_of + _path_sz + _query_sz ? 1 : 0;
+			_query_of = _path_of + _path_sz;
 			set_state(S_done);
 			return p;
 		}
@@ -277,10 +286,10 @@ namespace httputil
 		void parser::set_state(int s)
 		{
 			const char* st[] = {
-				"S_start",        "S_scheme",       "S_scheme_colon", "S_scheme_colon_slash",
-				"S_user_or_host", "S_user_or_port", "S_user",         "S_host",
-				"S_port",         "S_path",         "S_query",        "S_done",
-				"S_error"
+				"S_start",    "S_scheme",       "S_scheme_colon", "S_scheme_colon_slash",
+				"S_asterisk", "S_user_or_host", "S_user_or_port", "S_user",
+				"S_host",     "S_port",         "S_path",         "S_query",
+				"S_done",     "S_error"
 			};
 			_state = s;
 			printf("state=%s\n", st[s]);
@@ -288,7 +297,7 @@ namespace httputil
 
 		void parser::set_type(uri_t t)
 		{
-			const char* tp[] = { "invalid", "absolute", "origin", "authority", "asteriks" };
+			const char* tp[] = { "invalid", "absolute", "origin", "authority", "authorityplus", "asteriks" };
 			_type = t;
 			printf("type=%s\n", tp[static_cast<int>(t)]);
 		}

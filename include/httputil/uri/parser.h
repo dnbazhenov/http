@@ -28,10 +28,10 @@ namespace uri
 
 	enum class type_t
 	{
-		invalid,
 		absolute,
 		origin,
 		authority,
+		authority_plus,
 		asteriks
 	};
 
@@ -86,6 +86,7 @@ namespace uri
 			S_scheme,
 			S_scheme_colon,
 			S_scheme_colon_slash,
+			S_asterisk,
 			S_user_or_host,
 			S_user_or_port,
 			S_user,
@@ -99,7 +100,7 @@ namespace uri
 
 		using uri_t = uri::type_t;
 
-		uri_t _type = uri_t::invalid;
+		uri_t _type = uri_t::authority;
 		int _state = 0;
 
 		size_t _scheme_sz = 0;
