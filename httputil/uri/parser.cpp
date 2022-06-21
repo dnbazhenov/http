@@ -1,4 +1,5 @@
-#include <stddef.h>
+#include <climits>
+#include <cstddef>
 #include <utility>
 
 #include <httputil/char_traits.h>
@@ -91,6 +92,7 @@ namespace httputil
 					}
 
 					// reinterpret as port character
+					_port_sz = 1;
 					set_state(S_user_or_port);
 				}
 
@@ -99,13 +101,13 @@ namespace httputil
 					if (ch == '/')
 					{
 						set_state(S_user_or_host);
-						//						set_type(uri_t::absolute);
+						set_type(uri_t::absolute);
 						std::swap(_host_sz, _scheme_sz);
 						continue;
 					}
 
-					_port_sz = 1;  // colon
-					_path_sz = 1;  // slash
+					_port_sz = 1;  // colon would be a part of port string
+					_path_sz = 1;  // slash would be a part of path string
 
 					// this is an authority + path [query] form
 					set_type(uri_t::authority_plus);
@@ -124,12 +126,6 @@ namespace httputil
 
 				if (_state == S_user_or_host)
 				{
-					if (http::is_uchar(ch))
-					{
-						++_host_sz;
-						continue;
-					}
-
 					if (ch == ':')
 					{
 						_port_sz = 1;
@@ -137,14 +133,22 @@ namespace httputil
 						continue;
 					}
 
-					if (ch == '/')
+					if (http::is_uchar(ch))
+					{
+						++_host_sz;
+						continue;
+					}
+
+					if (ch == '/' && _host_sz)
 					{
 						_path_sz = 1;
+						if (_type == uri_t::authority)
+							set_type(uri_t::authority_plus);
 						set_state(S_path);
 						continue;
 					}
 
-					if (ch == '@')
+					if (ch == '@' && _host_sz)
 					{
 						std::swap(_user_sz, _host_sz);
 						set_state(S_host);
@@ -163,6 +167,8 @@ namespace httputil
 					if (ch == '/')
 					{
 						_path_sz = 1;
+						if (_type == uri_t::authority)
+							set_type(uri_t::authority_plus);
 						set_state(S_path);
 						continue;
 					}
@@ -185,7 +191,7 @@ namespace httputil
 						continue;
 					}
 
-					if (ch == '@')
+					if (ch == '@' && _user_sz)
 					{
 						set_state(S_host);
 						continue;
@@ -209,9 +215,11 @@ namespace httputil
 						continue;
 					}
 
-					if (ch == '/')
+					if (ch == '/' && _host_sz)
 					{
 						_path_sz = 1;
+						if (_type == uri_t::authority)
+							set_type(uri_t::authority_plus);
 						set_state(S_path);
 						continue;
 					}
@@ -228,6 +236,8 @@ namespace httputil
 					if (ch == '/')
 					{
 						_path_sz = 1;
+						if (_type == uri_t::authority)
+							set_type(uri_t::authority_plus);
 						set_state(S_path);
 						continue;
 					}
@@ -241,7 +251,7 @@ namespace httputil
 						continue;
 					}
 
-					if (ch == '&')
+					if (ch == '?')
 					{
 						set_state(S_query);
 						continue;
@@ -257,7 +267,8 @@ namespace httputil
 					}
 				}
 
-				if ((ch == ' ' || ch == '\0')&& _pct == pct_t::none)
+				if ((ch == ' ' || ch == '\0') && _pct == pct_t::none &&
+						(_host_sz || _path_sz))
 					return set_done(processed);
 
 				return set_error(processed - 1);
@@ -271,8 +282,12 @@ namespace httputil
 			_user_of = _scheme_sz ? _scheme_sz + 3 : 0;
 			_host_of = _user_of + _user_sz ? _user_sz + 1 : 0;
 			_port_of = _host_of + _host_sz;
+			if (_port_sz) {
+				++_port_of;
+				--_port_sz;
+			}
 			_path_of = _port_of + _port_sz;
-			_query_of = _path_of + _path_sz;
+			_query_of = _path_of + _path_sz + 1;
 			set_state(S_done);
 			return p;
 		}
@@ -297,7 +312,7 @@ namespace httputil
 
 		void parser::set_type(uri_t t)
 		{
-			const char* tp[] = { "invalid", "absolute", "origin", "authority", "authorityplus", "asteriks" };
+			const char* tp[] = { "absolute", "origin", "authority", "authorityplus", "asteriks" };
 			_type = t;
 			printf("type=%s\n", tp[static_cast<int>(t)]);
 		}
@@ -308,7 +323,8 @@ namespace httputil
 				return false;
 
 			auto port = _port * 10 + ch - '0';
-			if (port < _port)
+			printf("port=%d\n", port);
+			if (port > USHRT_MAX)
 				return false;
 
 			_port = port;

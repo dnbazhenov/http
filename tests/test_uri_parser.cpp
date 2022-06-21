@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 
 		uri = uri.substr(1, uri.size() -2);
 
-		printf("uri=\"%s\"\n", uri.c_str());
+		printf("Test case %d: uri=\"%s\"\n", n + 1, uri.c_str());
 
 		test_case d = parse_test_uri(uri);
 

@@ -70,7 +70,7 @@ namespace uri
 		bool has_port() const { return _port_sz != 0; }
 		size_t port_off() const { return _port_of; }
 		size_t port_size() const { return _port_sz; }
-		short port() const { return _port; }
+		u_int16_t port() const { return _port; }
 
 		bool has_path() const { return _path_sz != 0; }
 		size_t path_off() const { return _path_of; }
@@ -114,7 +114,7 @@ namespace uri
 		size_t _path_sz = 0;
 		size_t _query_of = 0;
 		size_t _query_sz = 0;
-		short _port = 0;
+		u_int16_t _port = 0;
 
 		pct_t _pct = pct_t::none;
 
