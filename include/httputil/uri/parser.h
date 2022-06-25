@@ -48,7 +48,6 @@ namespace uri
 		//void finish() { set_done(0); }
 
 		size_t parse(const char* data, size_t size);
-		size_t parse2(const char* data, size_t size);
 
 		type_t type() const { return _type; }
 
@@ -121,9 +120,13 @@ namespace uri
 	private:
 		void set_state(int s);
 		void set_type(uri_t t);
-		size_t set_error(size_t p);
-		size_t set_done(size_t p);
+		size_t set_error(size_t p)
+		{
+			set_state(S_error);
+			return p;
+		}
 
+		size_t set_done(size_t p);
 		bool pct_check(char ch);
 		bool update_port(char ch);
 

@@ -79,7 +79,7 @@ static test_case parse_test_uri(const std::string &uri)
 	httputil::uri::parser p;
 	test_case c;
 
-	c.processed = p.parse2(uri.data(), uri.size() + 1);
+	c.processed = p.parse(uri.data(), uri.size() + 1);
 	c.error = p.has_error();
 	c.type = static_cast<int>(p.type());
 	c.scheme_sz = p.scheme_size();

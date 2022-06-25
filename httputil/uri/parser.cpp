@@ -1,5 +1,6 @@
 #include <climits>
 #include <cstddef>
+#include <cstdio>
 #include <utility>
 
 #include <httputil/char_traits.h>
@@ -9,7 +10,63 @@ namespace httputil
 {
 	namespace uri
 	{
-		size_t parser::parse2(const char* data, size_t size)
+
+		template <bool _Debug>
+		struct logger_t {
+			void log_type(type_t t) {}
+			void log_state(int) {}
+			template <typename ..._Args>
+			void log(const char *fmt, _Args&& ...args) {}
+		};
+
+		template<>
+		struct logger_t<true> {
+			void log_type(type_t t) {
+				const char* t_str[] = {
+						"absolute",
+						"origin",
+						"authority",
+						"authorityplus",
+						"asteriks"
+				};
+				printf("type=%s\n", t_str[static_cast<int>(t)]);
+			}
+
+			void log_state(int s) {
+				const char* s_str[] = {
+					"S_start",    "S_scheme",
+					"S_scheme_colon", "S_scheme_colon_slash",
+					"S_asterisk", "S_user_or_host",
+					"S_user_or_port", "S_user",
+					"S_host",     "S_port",
+					"S_path",         "S_query",
+					"S_done",     "S_error"
+				};
+				printf("state=%s\n", s_str[s]);
+			}
+
+			template <typename ..._Args>
+			void log(const char *fmt, _Args&& ...args) {
+				printf(fmt, std::forward<_Args>(args)...);
+			}
+
+		};
+
+		static logger_t<false> logger;
+
+		inline void parser::set_state(int s)
+		{
+			logger.log_state(s);
+			_state = s;
+		}
+
+		inline void parser::set_type(uri_t t)
+		{
+			logger.log_type(t);
+			_type = t;
+		}
+
+		size_t parser::parse(const char* data, size_t size)
 		{
 			if (_state == S_done || _state == S_error)
 				return 0;
@@ -20,7 +77,7 @@ namespace httputil
 			{
 				auto ch = data[processed++];
 
-				printf("%ld: '%c'(%d)\n", processed - 1, ch, ch);
+				logger.log("%ld: '%c'(%d)\n", processed - 1, ch, ch);
 
 				if (!pct_check(ch))
 					return set_error(processed - 1);
@@ -292,38 +349,13 @@ namespace httputil
 			return p;
 		}
 
-		size_t parser::set_error(size_t p)
-		{
-			set_state(S_error);
-			return p;
-		}
-
-		void parser::set_state(int s)
-		{
-			const char* st[] = {
-				"S_start",    "S_scheme",       "S_scheme_colon", "S_scheme_colon_slash",
-				"S_asterisk", "S_user_or_host", "S_user_or_port", "S_user",
-				"S_host",     "S_port",         "S_path",         "S_query",
-				"S_done",     "S_error"
-			};
-			_state = s;
-			printf("state=%s\n", st[s]);
-		}
-
-		void parser::set_type(uri_t t)
-		{
-			const char* tp[] = { "absolute", "origin", "authority", "authorityplus", "asteriks" };
-			_type = t;
-			printf("type=%s\n", tp[static_cast<int>(t)]);
-		}
-
 		bool parser::update_port(char ch)
 		{
 			if (!http::is_digit(ch))
 				return false;
 
 			auto port = _port * 10 + ch - '0';
-			printf("port=%d\n", port);
+			logger.log("port=%d\n", port);
 			if (port > USHRT_MAX)
 				return false;
 
@@ -336,7 +368,7 @@ namespace httputil
 			if (_pct == pct_t::none && ch == '%')
 			{
 				_pct = pct_t::percent;
-				printf("_pct=%d\n", _pct);
+				logger.log("_pct=%d\n", _pct);
 				return true;
 			}
 
@@ -351,7 +383,7 @@ namespace httputil
 			else
 				_pct = pct_t::none;
 
-			printf("_pct=%d\n", _pct);
+			logger.log("_pct=%d\n", _pct);
 
 			return true;
 		}
