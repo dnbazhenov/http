@@ -80,15 +80,18 @@ static test_case parse_test_uri(const std::string &uri)
 	test_case c;
 
 	c.processed = p.parse(uri.data(), uri.size() + 1);
-	c.error = p.has_error();
-	c.type = static_cast<int>(p.type());
-	c.scheme_sz = p.scheme_size();
-	c.user_sz = p.user_size();
-	c.host_sz = p.host_size();
-	c.port_sz = p.port_size();
-	c.port = p.port();
-	c.path_sz = p.path_size();
-	c.query_sz = p.query_size();
+
+	auto r = p.results();
+
+	c.error = r.type == httputil::uri::uri_type::invalid;;
+	c.type = static_cast<int>(r.type);
+	c.scheme_sz = r.scheme.second;
+	c.user_sz = r.user.second;
+	c.host_sz = r.host.second;
+	c.port_sz = r.port.second;
+	c.path_sz = r.path.second;
+	c.query_sz = r.query.second;
+	c.port = r.port_num;
 
 	return c;
 }

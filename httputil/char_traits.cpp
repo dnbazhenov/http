@@ -1,6 +1,6 @@
 #include <httputil/char_traits.h>
 
-namespace http::impl
+namespace httputil::impl
 {
 	const std::array<char_flags_t, 256> __char_traits = mkchartraits();
 }

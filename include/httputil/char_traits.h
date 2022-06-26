@@ -33,9 +33,8 @@
  * pct-encoded   = "%" HEXDIG HEXDIG
  */
 
-namespace http
+namespace httputil
 {
-
 	typedef unsigned short char_flags_t;
 
 	namespace impl
@@ -169,7 +168,7 @@ namespace http
 			QCHAR = 0x1000   // query char
 		};
 
-		static constexpr char_flags_t  char_traits(char ch)
+		static constexpr char_flags_t char_traits(char ch)
 		{
 			char_flags_t t = 0;
 
@@ -203,7 +202,8 @@ namespace http
 		{
 			std::array<char_flags_t, 256> t{ 0 };
 
-			for (auto i = 0; i < 256; i++) {
+			for (auto i = 0; i < 256; i++)
+			{
 				t[i] = char_traits(i);
 			}
 
