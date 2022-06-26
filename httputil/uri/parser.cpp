@@ -311,7 +311,7 @@ namespace httputil
 
 				if (_state == S_path)
 				{
-					if (httputil::is_pchar(ch))
+					if (httputil::is_pchar(ch) || ch == '/')
 					{
 						_path_sz++;
 						continue;
@@ -381,7 +381,7 @@ namespace httputil
 		parse_results parser::results() const
 		{
 			auto user_of = _scheme_sz ? _scheme_sz + 3 : 0;
-			auto host_of = user_of + _user_sz ? _user_sz + 1 : 0;
+			auto host_of = user_of + (_user_sz ? _user_sz + 1 : 0);
 			auto port_of = host_of + _host_sz;
 			auto path_of = port_of + _port_sz;
 			auto query_of = path_of + _path_sz + 1;
