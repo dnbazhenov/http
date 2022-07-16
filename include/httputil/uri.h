@@ -11,23 +11,27 @@ namespace httputil
 		struct uri
 		{
 			uri() = default;
-			uri(uri&&) = default;
-			uri(const uri&) = default;
-
-			template<typename _Tp>
-			uri(_Tp&& s)
-				: _uri(std::forward<_Tp>(s))
+			uri(uri&& u)
+				: _uri(std::move(u._uri))
 			{
-				split();
+				copy(u);
+			}
+			uri(const uri& u)
+				: _uri(u._uri)
+			{
+				copy(u);
 			}
 
-			uri& operator=(uri&&) = default;
-			uri& operator=(const uri&) = default;
-
-			template<typename _Tp>
-			uri& operator=(_Tp&& s)
+			uri& operator=(uri&& u)
 			{
-				*this = _uri(std::forward<_Tp>(s));
+				_uri = std::move(u._uri);
+				copy(u);
+				return *this;
+			}
+			uri& operator=(const uri& u)
+			{
+				_uri = u._uri;
+				copy(u);
 				return *this;
 			}
 
@@ -60,8 +64,18 @@ namespace httputil
 			bool is_bad() const { return _type == uri_type::invalid; }
 
 		private:
-			friend class parser;
+			template<typename _Tp>
+			explicit uri(_Tp&& s)
+				: _uri(std::forward<_Tp>(s))
+			{
+				split();
+			}
 
+			template<typename _Tp>
+			friend uri parse(_Tp&& s);
+
+			friend class parser;
+			void copy(const uri& u);
 			void split();
 
 		private:
@@ -74,6 +88,12 @@ namespace httputil
 			uri_type _type;
 			ushort _port;
 		};
+
+		template<typename _Tp>
+		static inline uri parse(_Tp&& s)
+		{
+			return uri(std::forward<_Tp>(s));
+		}
 
 	};  // namespace uri
 };      // namespace httputil

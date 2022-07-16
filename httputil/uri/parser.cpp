@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <utility>
 
-#include <httputil/char_traits.h>
+#include <httputil/uri/char_traits.h>
 #include <httputil/uri/parser.h>
 
 namespace httputil
@@ -119,7 +119,7 @@ namespace httputil
 					// authority form.
 					//
 
-					if (httputil::is_alpha(ch))
+					if (is_alpha(ch))
 					{
 						set_state(S_scheme);
 						_host_sz = 1;
@@ -133,7 +133,7 @@ namespace httputil
 
 				if (_state == S_scheme)
 				{
-					if (httputil::is_schar(ch))
+					if (is_schar(ch))
 					{
 						++_host_sz;
 						continue;
@@ -199,7 +199,7 @@ namespace httputil
 						continue;
 					}
 
-					if (httputil::is_uchar(ch))
+					if (is_uchar(ch))
 					{
 						++_host_sz;
 						continue;
@@ -251,7 +251,7 @@ namespace httputil
 
 				if (_state == S_user)
 				{
-					if (httputil::is_uchar(ch))
+					if (is_uchar(ch))
 					{
 						++_user_sz;
 						continue;
@@ -268,7 +268,7 @@ namespace httputil
 
 				if (_state == S_host)
 				{
-					if (httputil::is_hchar(ch))
+					if (is_hchar(ch))
 					{
 						++_host_sz;
 						continue;
@@ -311,7 +311,7 @@ namespace httputil
 
 				if (_state == S_path)
 				{
-					if (httputil::is_pchar(ch) || ch == '/')
+					if (is_pchar(ch) || ch == '/')
 					{
 						_path_sz++;
 						continue;
@@ -326,7 +326,7 @@ namespace httputil
 
 				if (_state == S_query)
 				{
-					if (httputil::is_qchar(ch))
+					if (is_qchar(ch))
 					{
 						_query_sz++;
 						continue;
@@ -344,7 +344,7 @@ namespace httputil
 
 		bool parser::update_port(char ch)
 		{
-			if (!httputil::is_digit(ch))
+			if (!is_digit(ch))
 				return false;
 
 			auto port = _port * 10 + ch - '0';
@@ -368,7 +368,7 @@ namespace httputil
 			if (_pct == pct_t::none)
 				return true;
 
-			if (!httputil::is_hexdig(ch))
+			if (!is_hexdig(ch))
 				return false;
 
 			_pct = _pct == pct_t::percent ? pct_t::hex : pct_t::none;

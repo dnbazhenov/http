@@ -5,6 +5,24 @@ namespace httputil
 {
 	namespace uri
 	{
+		void uri::copy(const uri& u)
+		{
+			// calculate difference between pointers
+			std::ptrdiff_t diff = _uri.data() - u._uri.data();
+
+			auto copy_sv = [=](const std::string_view& sv) {
+				return std::string_view(sv.data() + diff, sv.size());
+			};
+
+			_scheme = copy_sv(u._scheme);
+			_user = copy_sv(u._user);
+			_host = copy_sv(u._host);
+			_path = copy_sv(u._path);
+			_query = copy_sv(u._query);
+			_type = u._type;
+			_port = u._port;
+		}
+
 		void uri::split()
 		{
 			parser p;

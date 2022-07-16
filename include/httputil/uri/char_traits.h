@@ -33,7 +33,7 @@
  * pct-encoded   = "%" HEXDIG HEXDIG
  */
 
-namespace httputil
+namespace httputil::uri
 {
 	typedef unsigned short char_flags_t;
 
@@ -253,4 +253,4 @@ namespace httputil
 	{
 		return char_traits(ch) & (impl::DELIM | impl::SUBDELIM);
 	}
-}  // namespace http
+}  // namespace httputil::uri
