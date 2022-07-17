@@ -1,5 +1,5 @@
-#include <httputil/uri.h>
 #include <httputil/parser/uri_parser.h>
+#include <httputil/uri.h>
 
 namespace httputil
 {
