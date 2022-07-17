@@ -156,11 +156,9 @@ namespace httputil::uri
 			ALPHA = 0x0001,
 			DIGIT = 0x0002,
 			HEXDIG = 0x0004,
-			PCT = 0x0008,  // %
 			DELIM = 0x0010,
 			SUBDELIM = 0x0020,
 			CTL = 0x0040,
-			OWS = 0x0080,
 			UNRESERVED = 0x0100,
 			SCHAR = 0x0200,  // scheme char
 			UCHAR = 0x0400,  // user info char
@@ -178,8 +176,6 @@ namespace httputil::uri
 				t |= DIGIT;
 			if (is_hexdig(ch))
 				t |= HEXDIG;
-			if (is_pct(ch))
-				t |= PCT;
 			if (is_gen_delim(ch))
 				t |= DELIM;
 			if (is_sub_delim(ch))
@@ -242,7 +238,7 @@ namespace httputil::uri
 
 	static constexpr bool is_hchar(char ch)
 	{
-		return char_traits(ch) & (impl::UNRESERVED | impl::PCT | impl::SUBDELIM);
+		return char_traits(ch) & (impl::UNRESERVED | impl::SUBDELIM);
 	}
 
 	static constexpr bool is_pchar(char ch) { return char_traits(ch) & impl::PCHAR; }

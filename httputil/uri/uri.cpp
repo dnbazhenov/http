@@ -1,5 +1,5 @@
 #include <httputil/uri.h>
-#include <httputil/uri/parser.h>
+#include <httputil/parser/uri_parser.h>
 
 namespace httputil
 {
@@ -25,7 +25,7 @@ namespace httputil
 
 		void uri::split()
 		{
-			parser p;
+			parser::uri_parser p;
 
 			p.parse(_uri.data(), _uri.size());
 			p.finish();

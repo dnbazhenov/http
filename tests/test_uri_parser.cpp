@@ -1,4 +1,7 @@
-#include <httputil/uri/parser.h>
+#include <iostream>
+
+#include <httputil/parser/uri_parser.h>
+#include <httputil/uri.h>
 
 #define CSV_IO_NO_THREAD
 #include "csv.h"
@@ -76,7 +79,7 @@ static bool match_test_data(int n, const test_case &e, const test_case &d)
 
 static test_case parse_test_uri(const std::string &uri)
 {
-	httputil::uri::parser p;
+	httputil::parser::uri_parser p;
 	test_case c;
 
 	c.processed = p.parse(uri.data(), uri.size() + 1);
@@ -123,6 +126,15 @@ int main(int argc, char *argv[])
 		if (!match_test_data(++n, e, d))
 			success = false;
 	}
+
+	auto u = httputil::uri::parse("http://user:pass@host:123/path/to/entry?querystr");
+
+	std::cout << "scheme=" << u.scheme() << std::endl;
+	std::cout << "user=" << u.user() << std::endl;
+	std::cout << "host=" << u.host() << std::endl;
+	std::cout << "port=" << u.port() << std::endl;
+	std::cout << "path=" << u.path() << std::endl;
+	std::cout << "query=" << u.query() << std::endl;
 
 	return success ? 0 : 1;
 }
