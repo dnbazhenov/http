@@ -4,6 +4,8 @@ link_libraries(httputil)
 add_executable(test_uri_parser test_uri_parser.cpp)
 add_test(NAME test_uri_parser COMMAND test_uri_parser)
 
+add_executable(test_field_parser test_field_parser.cpp)
+add_test(NAME test_field_parser COMMAND test_field_parser)
 
 file(COPY test_uri_parser.csv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 #install(DIRECTORY data DESTINATION tests/data)

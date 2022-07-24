@@ -85,7 +85,7 @@ namespace httputil::char_traits
 		}
 
 		// VCHAR =  %x21-7E
-		static constexpr bool is_vchar(char ch) { return ch > 0x21 && ch <= 0x7E; }
+		static constexpr bool is_vchar(char ch) { return ch >= 0x21 && ch <= 0x7E; }
 
 		// WSP = SP / HTAB
 		static constexpr bool is_wsp(char ch) { return ch == SP || ch == HTAB; }
@@ -117,12 +117,12 @@ namespace httputil::char_traits
 		extern const std::array<core_traits_t, 128> __core_traits;
 	}  // namespace details
 
-	template<typename _Tp>
-	static constexpr std::array<_Tp, 128> mktraits(_Tp (*fn)(char))
+	template<unsigned int _Size, typename _Tp>
+	static constexpr auto mktraits(_Tp (*fn)(char))
 	{
-		std::array<_Tp, 128> t{ 0 };
+		std::array<_Tp, _Size> t{ 0 };
 
-		for (auto i = 0; i < 128; i++)
+		for (auto i = 0; i < _Size; i++)
 		{
 			t[i] = fn(i);
 		}

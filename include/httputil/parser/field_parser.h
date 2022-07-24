@@ -4,7 +4,7 @@
 
 namespace httputil::parser
 {
-	struct header_parser
+	struct field_parser
 	{
 		enum
 		{
@@ -12,7 +12,6 @@ namespace httputil::parser
 			s_value_start,
 			s_value,
 			s_cr,
-			s_crlf,
 			s_done,
 			s_error
 		};
@@ -24,7 +23,7 @@ namespace httputil::parser
 			extent_t value;
 		};
 
-		void init() { *this = header_parser(); }
+		void init() { *this = field_parser(); }
 		void finish()
 		{
 			char ch = '\0';

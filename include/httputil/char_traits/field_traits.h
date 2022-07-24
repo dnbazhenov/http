@@ -93,6 +93,7 @@ namespace httputil::char_traits
 				case '&':
 				case '\'':
 				case '*':
+				case '+':
 				case '-':
 				case '.':
 				case '^':

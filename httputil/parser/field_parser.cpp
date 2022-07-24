@@ -48,8 +48,8 @@ namespace httputil::parser
 	{
 		void log_state(int s)
 		{
-			const char* s_str[] = { "S_name", "S_svalue_start", "S_svalue", "S_cr",
-									"S_crlf", "S_done",         "S_error" };
+			const char* s_str[] = { "S_name", "S_svalue_start", "S_svalue",
+									"S_cr",   "S_done",         "S_error" };
 			printf("state=%s\n", s_str[s]);
 		}
 
@@ -62,25 +62,25 @@ namespace httputil::parser
 
 	static logger_t<false> logger;
 
-	inline void header_parser::set_state(int s)
+	inline void field_parser::set_state(int s)
 	{
 		logger.log_state(s);
 		_state = s;
 	}
 
-	inline size_t header_parser::set_error(size_t p)
+	inline size_t field_parser::set_error(size_t p)
 	{
 		set_state(s_error);
 		return p;
 	}
 
-	inline size_t header_parser::set_done(size_t p)
+	inline size_t field_parser::set_done(size_t p)
 	{
 		set_state(s_done);
 		return p;
 	}
 
-	size_t header_parser::parse(const char* data, size_t size)
+	size_t field_parser::parse(const char* data, size_t size)
 	{
 		size_t processed = 0;
 
@@ -91,6 +91,7 @@ namespace httputil::parser
 		{
 			char ch = data[processed++];
 
+			logger.log("  %d: '%c' (%d)\n", processed - 1, ch, ch);
 			_pos++;
 
 			switch (_state)
@@ -98,7 +99,7 @@ namespace httputil::parser
 				case s_name:
 					if (is_tchar(ch))
 					{
-						_name_sz == _pos;
+						_name_sz = _pos;
 						continue;
 					}
 
@@ -116,7 +117,7 @@ namespace httputil::parser
 
 					if (is_field_vchar(ch))
 					{
-						_vbegin = _vend = _pos;
+						_vbegin = _vend = _pos - 1;
 						set_state(s_value);
 						continue;
 					}
@@ -132,13 +133,15 @@ namespace httputil::parser
 				case s_value:
 					if (is_field_vchar(ch))
 					{
-						_vend = _pos;
+						_vend = _pos - 1;
 						continue;
 					}
 
+					if (ch == ' ' || ch == '\t')
+						continue;
+
 					if (ch == '\r')
 					{
-						_vend = _pos;
 						set_state(s_cr);
 						continue;
 					}
@@ -147,21 +150,9 @@ namespace httputil::parser
 
 				case s_cr:
 					if (ch == '\n')
-					{
-						set_state(s_crlf);
-						continue;
-					}
+						return set_done(processed);
 
 					break;
-
-				case s_crlf:
-					if (ch == ' ' || ch == '\t')
-					{
-						set_state(_vbegin ? s_value : s_value_start);
-						continue;
-					}
-
-					return set_done(processed);
 			}
 
 			return set_error(processed - 1);
@@ -170,9 +161,9 @@ namespace httputil::parser
 		return processed;
 	}
 
-	header_parser::parse_results header_parser::results() const
+	field_parser::parse_results field_parser::results() const
 	{
-		return parse_results{ { 0, _name_sz }, { _vbegin, _vend - _vbegin } };
+		return parse_results{ { 0, _name_sz }, { _vbegin, _vbegin ? _vend - _vbegin + 1 : 0 } };
 	}
 
 }  // namespace httputil::parser
