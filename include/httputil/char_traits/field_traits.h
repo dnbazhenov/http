@@ -150,7 +150,7 @@ namespace httputil::char_traits
 		if constexpr (__builtin_constant_p(ch))
 			return details::field_traits(ch);
 		else
-			return details::__field_traits[ch];
+			return details::__field_traits[static_cast<unsigned char>(ch)];
 	}
 
 	static constexpr bool is_ctext(char ch) { return field_traits(ch) & CTEXT; }
