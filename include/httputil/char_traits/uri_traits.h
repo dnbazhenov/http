@@ -150,7 +150,7 @@ namespace httputil::char_traits
 	static constexpr bool is_unreserved(char ch) { return uri_traits(ch) & UNRESERVED; }
 	static constexpr bool is_schar(char ch) { return uri_traits(ch) & SCHAR; }
 	static constexpr bool is_uchar(char ch) { return uri_traits(ch) & UCHAR; }
-	static constexpr bool is_hchar(char ch) { return uri_traits(ch) & (UNRESERVED | SUBDELIM); }
+	static constexpr bool is_hchar(char ch) { return ch == '%' || (uri_traits(ch) & (UNRESERVED | SUBDELIM)); }
 	static constexpr bool is_pchar(char ch) { return uri_traits(ch) & PCHAR; }
 	static constexpr bool is_qchar(char ch) { return uri_traits(ch) & QCHAR; }
 

@@ -896,7 +896,7 @@ static bool test_hchar[256] = {
 	//	32	SP		33	!		34	"		35	#
 		false,		true,		false,		false,
 	//	36	$		37	%		38	&		39	'
-		true,		false,		true,		true,
+		true,		true,		true,		true,
 	//	40	(		41	)		42	*		43	+
 		true,		true,		true,		true,
 	//	44	,		45	-		46	.		47	/
