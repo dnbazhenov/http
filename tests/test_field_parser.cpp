@@ -94,17 +94,16 @@ int main(int argc, char *argv[])
 
 		if (res.name.second != tc.namesz) {
 			printf("Test case %d: invalid name size %d/%ld\n", n, res.name.second, tc.namesz);
-			continue;
 		}
 
 		if (res.value.first != tc.vbegin) {
 			printf("Test case %d: invalid value offset %d/%ld\n", n, res.value.first , tc.vbegin);
-			continue;
 		}
 
 		if (res.value.second != tc.vsz) {
 			printf("Test case %d: invalid value size %d/%ld\n", n, res.value.second , tc.vsz);
-			continue;
 		}
 	}
+
+	return 0;
 }

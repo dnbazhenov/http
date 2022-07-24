@@ -117,7 +117,8 @@ namespace httputil::parser
 
 					if (is_field_vchar(ch))
 					{
-						_vbegin = _vend = _pos - 1;
+						_vend = _pos;
+						_vbegin = _pos - 1;
 						set_state(s_value);
 						continue;
 					}
@@ -133,7 +134,7 @@ namespace httputil::parser
 				case s_value:
 					if (is_field_vchar(ch))
 					{
-						_vend = _pos - 1;
+						_vend = _pos;
 						continue;
 					}
 
@@ -163,7 +164,7 @@ namespace httputil::parser
 
 	field_parser::parse_results field_parser::results() const
 	{
-		return parse_results{ { 0, _name_sz }, { _vbegin, _vbegin ? _vend - _vbegin + 1 : 0 } };
+		return parse_results{ { 0, _name_sz }, { _vbegin, _vbegin ? _vend - _vbegin : 0 } };
 	}
 
 }  // namespace httputil::parser
