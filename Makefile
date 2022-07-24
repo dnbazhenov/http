@@ -7,7 +7,7 @@ clean: builddir
 	rm -rf build
 
 test: builddir
-	cmake -B build/ && make -C build/ test
+	cmake -B build/ && ARGS=-V make -C build/ test
 
 clang-format:
 	find include -name *.h -exec clang-format -i '{}' \;
